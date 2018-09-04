@@ -81,8 +81,6 @@ int init_peripheral(struct bcm2835_peripheral *p);
 #define MODE1 (1 << 1)
 #define PWEN1 (1 << 0)
 
-#define PWM_INIT() GPIO_ALT(18,2);  PWM_CTL |= (PWEN1 | RPTL1)
-
 // FIFO status
 #define PWM_FIFO_FULL (PWM_STA & 1)
 #define PWM_FIFO_EMPTY ((PWM_STA & (1 << 1)) >> 1)
@@ -90,6 +88,5 @@ int init_peripheral(struct bcm2835_peripheral *p);
 
 int Peripheral_init(struct bcm2835_peripheral *p);
 int Peripheral_close(struct bcm2835_peripheral *p);
-int PWM_init();
 
 #endif

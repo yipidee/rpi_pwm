@@ -80,7 +80,7 @@ int main()
 
 	// Step 2
 	// Stop clock
-	PWM_CLKCTL = (PWM_CLKPW | 0x10);
+	PWM_CLKCTL = (PWM_CLKPW | 0x01);
 	delay(100);
 	// Wait for clock to not be busy
 	while((PWM_CLKCTL & 0x80) != 0) delay(0);
@@ -89,7 +89,14 @@ int main()
 	PWM_CLKCTL =  (PWM_CLKPW | 0x11);
 
 	// Step 3
-	
+	PWM_CTL &= ~(1<<7);  //don't use mark-space mode
+	PWM_CTL |= 1; //enable pwm0	
+
+	PWM_RNG1 = 0x400;
+	PWM_DAT1 = 0x200;
+
+	delay(5000);
+	PWM_CLKCTL = (PWM_CLKPW | 0x01);
 
 	// Close the bcm2835 periperals
 	Peripheral_close(&gpio);
