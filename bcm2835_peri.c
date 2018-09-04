@@ -4,11 +4,23 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/unistd.h>
+#include <time.h>
 #include "bcm2835_peri.h"
+
+#define PIN_PWM 18
+#define ALT5 2
 
 struct bcm2835_peripheral gpio = {GPIO_BASE};
 struct bcm2835_peripheral pwm0 = {PWM_BASE};
-struct bcm2835_peripheral clk_pwm = {CLK_BASE};
+struct bcm2835_peripheral clk = {CLK_BASE};
+
+void delay(int ms)
+{
+	struct timespec delay_time;
+	delay_time.tv_sec = (time_t) ms / 1000;
+	delay_time.tv_nsec = (long) ((ms % 1000) * 1000);
+	nanosleep(&delay_time, NULL);
+}
 
 int Peripheral_init(struct bcm2835_peripheral *p)
 {
@@ -48,71 +60,41 @@ int Peripheral_close(struct bcm2835_peripheral *p)
 	return 0;
 }
 
-int PWM_init()
-{
-	int error_count = 0;
-	while(1)
-	{
-		if (error_count > 100)
-		{
-			printf("error count out\n");
-			return -1;
-		}
-		if(PWM_CLK_BUSY)
-		{
-			++error_count;
-		}else
-		{
-			PWM_CLKCTL = (PWM_CLKPW | PWM_CLKSRC);
-			usleep(10);
-			PWM_CLKDIV = (PWM_CLKPW | (0x1F9 << 12) | 0xA48);
-			usleep(10);
-			//PWM_DMAC = ((1<<31) | (7 << 8) | 7);
-			PWM_RNG1 = 0x400;
-			usleep(10);
-			PWM_DAT1 = 0x400;
-			usleep(10);
-			break;
-		}
-	}
-	return 0;
-}
-
 int main()
 {
+	// Initialize the bcm2835 peripherals to be used
 	Peripheral_init(&gpio);
 	Peripheral_init(&pwm0);
-	Peripheral_init(&clk_pwm);
+	Peripheral_init(&clk);
 
-	PWM_CTL = 0;
-	usleep(10);
-	PWM_INIT();
-	usleep(10);
+	/**********************************************
+	 * Steps required
+	 * 1. setup GPIO pins for PWM
+	 * 2. setup PWM clock
+	 * 3. setup PWM
+	 *********************************************/
 
-	PWM_CLKCTL = (PWM_CLKPW | PWM_CLKSRC);
-	usleep(10);
-	PWM_CLKDIV = (PWM_CLKPW | (0x1F9 << 12) | 0xA48);
-	usleep(10);
-	PWM_RNG1 = 0x400;
-	usleep(10);
-	PWM_CLK_START();
-	while(1)
-	{
-		printf("running\n");
-		PWM_DAT1 = 0x400;
-		usleep(10);
-	}
+	// Step 1
+	GPIO_OUT(PIN_PWM);
+	GPIO_ALT(PIN_PWM, ALT5);
 
+	// Step 2
+	// Stop clock
+	PWM_CLKCTL = (PWM_CLKPW | 0x10);
+	delay(100);
+	// Wait for clock to not be busy
+	while((PWM_CLKCTL & 0x80) != 0) delay(0);
+	// set clock divider and enable oscillator
+	PWM_CLKDIV = (PWM_CLKPW | (0x2 << 12));
+	PWM_CLKCTL =  (PWM_CLKPW | 0x11);
 
-/*
-	PWM_init();
-	usleep(10);
-	PWM_CLK_START();
-	PWM_CLK_STOP();
-*/
+	// Step 3
+	
+
+	// Close the bcm2835 periperals
 	Peripheral_close(&gpio);
 	Peripheral_close(&pwm0);
-	Peripheral_close(&clk_pwm);
+	Peripheral_close(&clk);
 
 	return 0;
 }

@@ -17,7 +17,7 @@ struct bcm2835_peripheral {
 
 extern struct bcm2835_peripheral gpio;
 extern struct bcm2835_peripheral pwm0;
-extern struct bcm2835_peripheral clk_pwm;
+extern struct bcm2835_peripheral clk;
 
 int init_peripheral(struct bcm2835_peripheral *p);
 
@@ -51,14 +51,14 @@ int init_peripheral(struct bcm2835_peripheral *p);
 */
 
 //PWM CLK
-#define PWM_CLKCTL *(clk_pwm.addr + 40)
-#define PWM_CLKDIV *(clk_pwm.addr + 41)
+#define PWM_CLKCTL *(clk.addr + 40)
+#define PWM_CLKDIV *(clk.addr + 41)
 #define PWM_CLKPW (0x5a << 24)
 #define PWM_CLKSRC 1
 
 #define PWM_CLK_START() (PWM_CLKCTL |=  (1 << 4))
 #define PWM_CLK_STOP() (PWM_CLKCTL &= ~(1 << 4))
-#define PWM_CLK_BUSY ((PWM_CLKCTL & (1 << 7)) >> 7)
+#define PWM_CLK_BUSY() ((PWM_CLKCTL & (1 << 7)) >> 7)
 
 // CTL register bits
 /*
