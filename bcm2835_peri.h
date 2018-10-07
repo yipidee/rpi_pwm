@@ -40,14 +40,14 @@ int init_peripheral(struct bcm2835_peripheral *p);
 #define PWM_CTL *(pwm0.addr + 0)
 #define PWM_STA *(pwm0.addr + 1)
 #define PWM_DMAC *(pwm0.addr + 2)
-#define PWM_RNG1 *(pwm0.addr + 3)
-#define PWM_DAT1 *(pwm0.addr + 4)
-#define PWM_FIF1 *(pwm0.addr + 5)
+#define PWM_RNG1 *(pwm0.addr + 4)
+#define PWM_DAT1 *(pwm0.addr + 5)
+#define PWM_FIF1 *(pwm0.addr + 6)
 /*
  * pwm1 not exposed on model B header, ignoring
  *
-#define PWM_RNG2 *(pwm0.addr + 6)
-#define PWM_DAT2 *(pwm0.addr + 7)
+#define PWM_RNG2 *(pwm0.addr + 8)
+#define PWM_DAT2 *(pwm0.addr + 9)
 */
 
 //PWM CLK

@@ -76,26 +76,45 @@ int main()
 
 	// Step 1
 	GPIO_OUT(PIN_PWM);
+	GPIO_ON(PIN_PWM);
+	delay(1000);
+	GPIO_CLEAR(PIN_PWM);
+	delay(1000);
 	GPIO_ALT(PIN_PWM, ALT5);
+	delay(10);
 
 	// Step 2
 	// Stop clock
 	PWM_CLKCTL = (PWM_CLKPW | 0x01);
 	delay(100);
 	// Wait for clock to not be busy
-	while((PWM_CLKCTL & 0x80) != 0) delay(0);
+	while((PWM_CLKCTL & 0x80) != 0)
+	{
+		delay(10);
+	}
+
 	// set clock divider and enable oscillator
-	PWM_CLKDIV = (PWM_CLKPW | (0x2 << 12));
+	PWM_CLKDIV = (PWM_CLKPW | (0x200 << 12));
 	PWM_CLKCTL =  (PWM_CLKPW | 0x11);
+	delay(10);
 
 	// Step 3
-	PWM_CTL &= ~(1<<7);  //don't use mark-space mode
-	PWM_CTL |= 1; //enable pwm0	
+	unsigned int control = PWM_CTL;
+	control |= (1<<7);  //don't use mark-space mode
+	control |= 1; //enable pwm0
+	PWM_CTL = control;	
 
 	PWM_RNG1 = 0x400;
-	PWM_DAT1 = 0x200;
-
-	delay(5000);
+	for(int a=0; a<=0x400; ++a)
+	{
+		PWM_DAT1 = a;
+		delay(500);
+	}
+	for(int a=0x400; a>=0; --a)
+	{
+		PWM_DAT1 = a;
+		delay(500);
+	}
 	PWM_CLKCTL = (PWM_CLKPW | 0x01);
 
 	// Close the bcm2835 periperals
