@@ -19,7 +19,11 @@ extern struct bcm2835_peripheral gpio;
 extern struct bcm2835_peripheral pwm0;
 extern struct bcm2835_peripheral clk;
 
-int init_peripheral(struct bcm2835_peripheral *p);
+/*******************************************************************************
+ * General peripheral control
+ * ****************************************************************************/
+int Peripheral_init(struct bcm2835_peripheral *p);
+int Peripheral_close(struct bcm2835_peripheral *p);
 
 /**************************************************************************************
  * GPIO: Access to RPi's GPIO pins
@@ -40,12 +44,14 @@ int init_peripheral(struct bcm2835_peripheral *p);
 #define PWM_CTL *(pwm0.addr + 0)
 #define PWM_STA *(pwm0.addr + 1)
 #define PWM_DMAC *(pwm0.addr + 2)
+//"pwm0.addr + 3" is an unused dummy address
 #define PWM_RNG1 *(pwm0.addr + 4)
 #define PWM_DAT1 *(pwm0.addr + 5)
 #define PWM_FIF1 *(pwm0.addr + 6)
 /*
  * pwm1 not exposed on model B header, ignoring
  *
+//"pwm0.addr + 7" is an unused dummy address
 #define PWM_RNG2 *(pwm0.addr + 8)
 #define PWM_DAT2 *(pwm0.addr + 9)
 */
@@ -86,7 +92,7 @@ int init_peripheral(struct bcm2835_peripheral *p);
 #define PWM_FIFO_EMPTY ((PWM_STA & (1 << 1)) >> 1)
 #define PWM_FIFO_CLEAR() (PWM_CTL |= CLRF1)
 
-int Peripheral_init(struct bcm2835_peripheral *p);
-int Peripheral_close(struct bcm2835_peripheral *p);
+int PWM_init(int f);  //initialize the PWM module with carrier freq f (Hz)
+int PWM_setDuty(int d);  //set the PWM duty cycle as %
 
 #endif

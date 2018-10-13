@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdint.h>
 #include <fcntl.h>
 #include <sys/mman.h>
 #include <sys/types.h>
@@ -18,7 +19,7 @@ void delay(int ms)
 {
 	struct timespec delay_time;
 	delay_time.tv_sec = (time_t) ms / 1000;
-	delay_time.tv_nsec = (long) ((ms % 1000) * 1000);
+	delay_time.tv_nsec = (long) ((ms % 1000) * 1000 * 1000);
 	nanosleep(&delay_time, NULL);
 }
 
@@ -60,6 +61,74 @@ int Peripheral_close(struct bcm2835_peripheral *p)
 	return 0;
 }
 
+int PWM_setRange(int r)
+{
+	int res = 0;
+	
+	PWM_RNG1 = r;
+
+	return res;
+}
+
+int PWM_setFrequency(int f)
+{
+	int res = 0;
+
+	//want to setup PWM with frequency f Hz
+	//base clock frequency is 19.2MHz
+	//which can be divided using PWM_CLKDIV * PWM_RNG
+	
+	uint32_t currRange = PWM_RNG1;
+	int CLK_DIV = 19200000 / currRange / f;
+	CLK_DIV &= 0xFFF;
+	printf("divider %d\n", CLK_DIV);
+
+	// Stop clock
+	PWM_CLKCTL = (PWM_CLKPW | 0x01);
+	delay(10);
+	// Wait for clock to not be busy
+	while((PWM_CLKCTL & 0x80) != 0) delay(10);
+
+	// set clock divider and enable oscillator
+	PWM_CLKDIV = (PWM_CLKPW | (CLK_DIV << 12));
+	PWM_CLKCTL =  (PWM_CLKPW | 0x11);
+	delay(10);
+
+	return res;
+}
+
+int PWM_init(int f)
+{
+	int res = 0;
+	
+	//set hardware PWM output pin to PWM mode
+	GPIO_ALT(PIN_PWM, ALT5);
+	delay(10);
+
+	//set resolution, currently defaults to this value
+	PWM_setRange(0x400);
+	PWM_setFrequency(f);
+
+	unsigned int control = PWM_CTL;
+	control |= (1<<7);  //don't use mark-space mode
+	control |= 1; //enable pwm0
+	PWM_CTL = control;
+	
+	return res;
+}
+
+int PWM_setDuty(int d)
+{
+	int res = 0;
+
+	uint32_t range = PWM_RNG1;
+	d = (range * d) / 100;
+
+	PWM_DAT1 = d;
+
+	return res;
+}
+
 int main()
 {
 	// Initialize the bcm2835 peripherals to be used
@@ -67,54 +136,18 @@ int main()
 	Peripheral_init(&pwm0);
 	Peripheral_init(&clk);
 
-	/**********************************************
-	 * Steps required
-	 * 1. setup GPIO pins for PWM
-	 * 2. setup PWM clock
-	 * 3. setup PWM
-	 *********************************************/
+	PWM_init(38500);
+	PWM_setDuty(50);
 
-	// Step 1
-	GPIO_OUT(PIN_PWM);
-	GPIO_ON(PIN_PWM);
-	delay(1000);
-	GPIO_CLEAR(PIN_PWM);
-	delay(1000);
-	GPIO_ALT(PIN_PWM, ALT5);
-	delay(10);
-
-	// Step 2
-	// Stop clock
-	PWM_CLKCTL = (PWM_CLKPW | 0x01);
-	delay(100);
-	// Wait for clock to not be busy
-	while((PWM_CLKCTL & 0x80) != 0)
+	/*
+	for(int a=1; a<=100000; ++a)
 	{
-		delay(10);
+		PWM_setFrequency(a);
+		delay(100);
 	}
+	*/
+	delay(5000);
 
-	// set clock divider and enable oscillator
-	PWM_CLKDIV = (PWM_CLKPW | (0x200 << 12));
-	PWM_CLKCTL =  (PWM_CLKPW | 0x11);
-	delay(10);
-
-	// Step 3
-	unsigned int control = PWM_CTL;
-	control |= (1<<7);  //don't use mark-space mode
-	control |= 1; //enable pwm0
-	PWM_CTL = control;	
-
-	PWM_RNG1 = 0x400;
-	for(int a=0; a<=0x400; ++a)
-	{
-		PWM_DAT1 = a;
-		delay(500);
-	}
-	for(int a=0x400; a>=0; --a)
-	{
-		PWM_DAT1 = a;
-		delay(500);
-	}
 	PWM_CLKCTL = (PWM_CLKPW | 0x01);
 
 	// Close the bcm2835 periperals
